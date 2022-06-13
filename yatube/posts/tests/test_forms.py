@@ -16,13 +16,13 @@ class CreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
         cls.uploaded = SimpleUploadedFile(
             name='small.gif',
@@ -93,20 +93,28 @@ class CreateFormTests(TestCase):
         self.assertFalse(Post.objects.filter(text=text_before).exists())
 
     def test_add_comment_guest(self):
-        """Проверяем невозможность добавления комментария к посту анонимным пользователем"""
+        """
+        Проверяем невозможность добавления комментария к посту
+        анонимным пользователем
+        """
         post_to_comment = Post.objects.first()
         self.guest_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': post_to_comment.id}),
+            reverse('posts:add_comment',
+                    kwargs={'post_id': post_to_comment.id}),
             data=self.comment_data,
             follow=True,
         )
         self.assertFalse(Comment.objects.first())
 
     def test_add_comment_authorized(self):
-        """Проверяем возможность добавления комментария к посту авторизованным пользователем"""
+        """
+        Проверяем возможность добавления комментария к посту
+        авторизованным пользователем
+        """
         post_to_comment = Post.objects.first()
         self.authorized_author_client.post(
-            reverse('posts:add_comment', kwargs={'post_id': post_to_comment.id}),
+            reverse('posts:add_comment',
+                    kwargs={'post_id': post_to_comment.id}),
             data=self.comment_data,
             follow=True,
         )
