@@ -98,13 +98,17 @@ class CreateFormTests(TestCase):
         анонимным пользователем
         """
         post_to_comment = Post.objects.first()
+        init_num_comments = len(Comment.objects.filter(post=post_to_comment)
+                                .all())
         self.guest_client.post(
             reverse('posts:add_comment',
                     kwargs={'post_id': post_to_comment.id}),
             data=self.comment_data,
             follow=True,
         )
-        self.assertFalse(Comment.objects.first())
+        final_num_comments = len(Comment.objects.filter(post=post_to_comment)
+                                 .all())
+        self.assertTrue(init_num_comments == final_num_comments)
 
     def test_add_comment_authorized(self):
         """
@@ -112,10 +116,14 @@ class CreateFormTests(TestCase):
         авторизованным пользователем
         """
         post_to_comment = Post.objects.first()
+        init_num_comments = len(Comment.objects.filter(post=post_to_comment)
+                                .all())
         self.authorized_author_client.post(
             reverse('posts:add_comment',
                     kwargs={'post_id': post_to_comment.id}),
             data=self.comment_data,
             follow=True,
         )
-        self.assertTrue(Comment.objects.first())
+        final_num_comments = len(Comment.objects.filter(post=post_to_comment)
+                                 .all())
+        self.assertTrue(init_num_comments < final_num_comments)

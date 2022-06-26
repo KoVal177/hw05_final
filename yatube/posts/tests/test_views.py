@@ -63,6 +63,8 @@ class ViewsTests(TestCase):
         self.authorized_author_client = Client()
         self.authorized_client.force_login(self.user)
         self.authorized_author_client.force_login(self.user_author)
+        self.not_subscribed_user_client = Client()
+        self.not_subscribed_user_client.force_login(self.another_user)
         cache.clear()
 
     def test_names_templates_guest(self):
@@ -233,25 +235,13 @@ class ViewsTests(TestCase):
     def test_cache(self):
         """ Проверяем работу кэша на index при редактировании поста"""
         url = '/'
-        response = self.authorized_author_client.get(url)
-        initial_page = response.content
-        post_to_edit = Post.objects.first()
-        form_data = {
-            'text': 'Исправленный текст старого поста',
-            'group': 1,
-        }
-        self.authorized_author_client.post(
-            reverse('posts:post_edit', kwargs={'post_id': post_to_edit.id}),
-            data=form_data,
-        )
-        with self.subTest(url=url):
-            response = self.authorized_author_client.get(url)
-            new_page = response.content
-            self.assertEqual(initial_page, new_page)
-            cache.clear()
-            response = self.authorized_author_client.get(url)
-            new_page = response.content
-            self.assertNotEqual(initial_page, new_page)
+        initial_page = self.authorized_author_client.get(url).content
+        Post.objects.filter(pk=1).update(text='Исправленный текст поста')
+        new_page = self.authorized_author_client.get(url).content
+        self.assertEqual(initial_page, new_page)
+        cache.clear()
+        new_page = self.authorized_author_client.get(url).content
+        self.assertNotEqual(initial_page, new_page)
 
     def test_add_subscription(self):
         """Проверяем добавление подписки на автора"""
@@ -259,41 +249,54 @@ class ViewsTests(TestCase):
             'posts:profile_follow',
             kwargs={'username': self.user_author.username})
         )
-        self.assertIsNotNone(Follow.objects.first())
+        new_subscription = Follow.objects.filter(
+            user=self.user,
+            author=self.user_author)
+        self.assertTrue(new_subscription.exists())
 
     def test_delete_subscription(self):
         """Проверяем удаление подписки на автора"""
-        self.authorized_client.get(reverse(
-            'posts:profile_follow',
-            kwargs={'username': self.user_author.username})
-        )
+        Follow.objects.create(user=self.user, author=self.user_author)
         self.authorized_client.get(reverse(
             'posts:profile_unfollow',
             kwargs={'username': self.user_author.username})
         )
-        self.assertIsNone(Follow.objects.first())
+        deleted_subscription = Follow.objects.filter(
+            user=self.user,
+            author=self.user_author)
+        self.assertFalse(deleted_subscription.exists())
 
     def test_subscription_following(self):
         """
         Проверяем появление подписки в ленте подписавшегося
-        и ее отсутствие у других
         """
-        not_subscribed_user_client = Client()
-        not_subscribed_user_client.force_login(self.another_user)
-        self.authorized_client.get(reverse(
-            'posts:profile_follow',
-            kwargs={'username': self.user_author.username})
+        response = self.authorized_client.get(reverse(
+            'posts:follow_index')
         )
+        initial_num_posts_subscription = len(response.context['page_obj']
+                                             .object_list)
+        Follow.objects.create(user=self.user, author=self.user_author)
         response = self.authorized_client.get(reverse(
             'posts:follow_index')
         )
         context = response.context['page_obj'].object_list
-        self.assertTrue(len(context) > 0)
-        response = not_subscribed_user_client.get(reverse(
+        self.assertTrue(len(context) > initial_num_posts_subscription)
+
+    def test_subscription_not_following(self):
+        """
+        Проверяем непоявление подписки в ленте у неподписавшегося
+        """
+        response = self.authorized_client.get(reverse(
+            'posts:follow_index')
+        )
+        initial_num_posts_subscription = len(response.context['page_obj']
+                                             .object_list)
+        Follow.objects.create(user=self.user, author=self.user_author)
+        response = self.not_subscribed_user_client.get(reverse(
             'posts:follow_index')
         )
         context = response.context['page_obj'].object_list
-        self.assertTrue(len(context) == 0)
+        self.assertTrue(len(context) == initial_num_posts_subscription)
 
 
 class PaginatorViewTest(TestCase):

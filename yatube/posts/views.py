@@ -34,10 +34,9 @@ def profile(request, username):
     if not request.user.is_authenticated:
         following = False
     else:
-        if Follow.objects.filter(user=request.user, author=author).exists():
-            following = True
-        else:
-            following = False
+        following = Follow.objects.filter(
+            user=request.user,
+            author=author).exists()
     post_list = author.posts.all()
     page_obj = paginate(post_list, request.GET.get('page'))
     context = {
@@ -51,7 +50,7 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(Post.objects.select_related(), pk=post_id)
     comment_list = post.comments.all()
-    form = CommentForm(request.POST or None)
+    form = CommentForm()
     context = {
         'post': post,
         'form': form,
@@ -109,10 +108,7 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     """Вывести посты авторов из подписки"""
-    authors = Follow.objects.select_related('author').filter(
-        user=request.user).values('author')
-    post_list = Post.objects.select_related('group', 'author').filter(
-        author__in=authors)
+    post_list = Post.objects.filter(author__following__user=request.user)
     page_obj = paginate(post_list, request.GET.get('page'))
     context = {
         'page_obj': page_obj,
@@ -123,24 +119,24 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     """Подписаться на автора"""
-    if request.user.username == username:
+    author = get_object_or_404(User, username=username)
+    if request.user == author:
         return redirect('posts:follow_index')
-    author = User.objects.get(username=username)
-    if not Follow.objects.filter(user=request.user, author=author).exists():
-        follow_link = Follow.objects.create(
-            user=request.user,
-            author=author,
-        )
-        follow_link.save()
+    Follow.objects.get_or_create(
+        user=request.user,
+        author=author,
+    )
     return redirect('posts:follow_index')
 
 
 @login_required
 def profile_unfollow(request, username):
     """Отписаться от автора"""
-    author = User.objects.get(username=username)
-    Follow.objects.filter(
+    author = get_object_or_404(User, username=username)
+    to_unsubscribe_author = Follow.objects.filter(
         user=request.user,
         author=author,
-    ).delete()
+    )
+    if to_unsubscribe_author.exists():
+        to_unsubscribe_author.delete()
     return redirect('posts:follow_index')
