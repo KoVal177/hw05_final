@@ -2,9 +2,9 @@
 {% block title %}Лента подписок пользователя{% endblock %}
 {% block content %}
   <h1>Лента подписок пользователя</h1>
-  {% include 'posts/includes/switcher.html' %}
+  {% include 'posts/includes/switcher.html' with follow=True %}
   {% for post in page_obj %}
-    {% include 'includes/post.html' with show_author=True %}
+    {% include 'posts/includes/post.html' with show_author=True %}
   {% endfor %}
   {% include 'includes/paginator.html' %}
 {% endblock %}

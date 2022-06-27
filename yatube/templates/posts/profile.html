@@ -17,7 +17,7 @@
     {% endif %}
   </div>
   {% for post in page_obj %}
-    {% include 'includes/post.html' with show_author=False %}
+    {% include 'posts/includes/post.html' with show_author=False %}
   {% endfor %}
   {% include 'includes/paginator.html' %}
 {% endblock %}

@@ -6,7 +6,7 @@
     {{ group.description|linebreaksbr }}
   </p>
   {% for post in page_obj %}
-    {% include 'includes/post.html' with show_author=True %}
+    {% include 'posts/includes/post.html' with show_author=True %}
   {% endfor %}
   {% include 'includes/paginator.html' %}
 {% endblock %}

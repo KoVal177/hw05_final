@@ -108,7 +108,7 @@ class CreateFormTests(TestCase):
         )
         final_num_comments = len(Comment.objects.filter(post=post_to_comment)
                                  .all())
-        self.assertTrue(init_num_comments == final_num_comments)
+        self.assertEqual(init_num_comments, final_num_comments)
 
     def test_add_comment_authorized(self):
         """
@@ -126,4 +126,8 @@ class CreateFormTests(TestCase):
         )
         final_num_comments = len(Comment.objects.filter(post=post_to_comment)
                                  .all())
-        self.assertTrue(init_num_comments < final_num_comments)
+        self.assertTrue(Comment.objects.filter(
+            post=post_to_comment,
+            text=self.comment_data['text']
+        ).exists())
+        self.assertEqual(init_num_comments + 1, final_num_comments)

@@ -236,7 +236,10 @@ class ViewsTests(TestCase):
         """ Проверяем работу кэша на index при редактировании поста"""
         url = '/'
         initial_page = self.authorized_author_client.get(url).content
-        Post.objects.filter(pk=1).update(text='Исправленный текст поста')
+        # Post.objects.filter(pk=1).update(text='Исправленный текст поста')
+        Post.objects.filter(text=self.post.text).update(
+            text='Исправленный текст поста'
+        )
         new_page = self.authorized_author_client.get(url).content
         self.assertEqual(initial_page, new_page)
         cache.clear()
